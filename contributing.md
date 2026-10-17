@@ -35,6 +35,6 @@ lychee --no-progress --format json --output lychee/out.json readme.md
 GITHUB_TOKEN=YOUR_GITHUB_TOKEN python3 scripts/health.py --dry-run
 ```
 
-Fork pull requests receive check results; issue creation requires trusted workflow permissions. The weekly branch preserves pending edits instead of force-pushing over them. If the default branch diverges while a PR is open, resolve any merge conflict during review.
+Fork pull requests receive check results; issue creation requires trusted workflow permissions. The weekly branch preserves pending edits instead of force-pushing over them. The default branch is merged into the weekly branch without rewriting history, including after a squash merge. Any conflict stops the run for manual review; it is never resolved automatically.
 
 CC0 applies to your list contributions. Before proposing this list to the main Awesome directory, allow at least thirty days for it to mature.
