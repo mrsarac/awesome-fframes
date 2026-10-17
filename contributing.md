@@ -1,0 +1,40 @@
+# Contributing
+
+Suggest one relevant resource per pull request. This list focuses on fframes, not general video tools.
+
+- Use `- [Name](url) - Description.` with an uppercase first letter and a final period.
+- Link to the canonical project, documentation or article. Open the link before submitting it.
+- Explain what the resource provides without star counts, speed claims or promotional language.
+- Check the repository license file. Reusable crates, bindings and templates need an explicit license; unlicensed source belongs only in Showcase and must say “no license found”. Media rights may differ from code rights.
+- Disclose entries that are your own projects with “maintainer's own project” where applicable.
+- Check recent commits. Flag projects with no commit in the previous twelve months for review rather than silently removing them.
+- Do not copy third-party code or media into this repository.
+
+Run these checks from the repository root:
+
+```sh
+python3 -m unittest discover -s tests -v
+npx awesome-lint
+lychee readme.md
+GITHUB_TOKEN=YOUR_GITHUB_TOKEN python3 scripts/candidates.py --dry-run
+```
+
+Supply credentials through your environment; never commit or paste a real token into a report. Dry runs read metadata and print proposals without editing the list, state or issues. The candidates script admits only non-fork, non-archived repositories with a license file, a description, a push within 180 days, and either ten stars or a reverse-dependent crate with one hundred downloads. Descriptions are cleaned and shortened deterministically; no model is called. Other candidates and entries without a commit in twelve months go into one ISO-week issue. API failures stop the run instead of silently publishing partial results.
+
+Weekly maintenance runs on Mondays at 08:00 UTC and can be dispatched manually. The health script removes archived repositories and links failing in two consecutive ISO weeks. A retry within the same week does not increase the failure streak; a healthy observation or missed week breaks it. State lives in `.github/link-state.json`. The pending `bot/weekly` branch is reused so unmerged observations survive until the next run.
+
+One pull request contains proposed list/state changes and their source metadata. Actions are pinned to commit SHAs; the scripts use only the Python standard library and public GitHub/crates.io APIs. No model or agent runs. Automatic additions go to Crates for reverse dependencies, Agent skills for matching names/topics, or Community otherwise. Removal of the last entry also removes its heading and contents link. A provenance ledger retains evidence for an open pull request; it is cleared as changes reach the default branch.
+
+Both checks run on the proposed tree within the weekly job and their results are recorded in the pull request body. The separate pull-request workflow also runs for normal PR events. GitHub may suppress an additional pull-request event for changes created with `GITHUB_TOKEN`; the weekly job therefore does not rely on that event for validation. First-week link failures are recorded even when a PR needs repair. The workflow never merges a pull request and never changes repository settings. A maintainer must enable Actions pull requests and decide the merge policy.
+
+For a local health preview, first create a lychee report:
+
+```sh
+mkdir -p lychee
+lychee --no-progress --format json --output lychee/out.json readme.md
+GITHUB_TOKEN=YOUR_GITHUB_TOKEN python3 scripts/health.py --dry-run
+```
+
+Fork pull requests receive check results; issue creation requires trusted workflow permissions. The weekly branch preserves pending edits instead of force-pushing over them. If the default branch diverges while a PR is open, resolve any merge conflict during review.
+
+CC0 applies to your list contributions. Before proposing this list to the main Awesome directory, allow at least thirty days for it to mature.
