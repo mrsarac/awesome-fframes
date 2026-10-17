@@ -69,7 +69,10 @@ jobs:
           python3 scripts/health.py --lychee-report lychee/initial.json --report lychee/health.json
           python3 scripts/candidates.py --report lychee/candidates.json
           python3 scripts/weekly_report.py
-          python3 -m unittest discover -s tests -v
+      - name: Test the maintenance scripts
+        id: tests
+        continue-on-error: true
+        run: python3 -m unittest discover -s tests -v
       - name: Lint the proposed list
         id: lint
         continue-on-error: true
@@ -83,14 +86,16 @@ jobs:
           output: lychee/final.json
           fail: false
       - name: Open or update one pull request
+        id: publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
           LINT_RESULT: ${{ steps.lint.outcome }}
           LINK_RESULT: ${{ steps.links.outputs.exit_code }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          printf '\nAwesome lint: %s. Lychee exit: %s.\n' "$LINT_RESULT" "$LINK_RESULT" >> lychee/pr-body.md
+          printf '\nTests: %s. Awesome lint: %s. Lychee exit: %s.\n' "$TEST_RESULT" "$LINT_RESULT" "$LINK_RESULT" >> lychee/pr-body.md
           printf '\nRun: %s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> lychee/pr-body.md
           git add readme.md .github/link-state.json .github/weekly-sources.json
           if ! git diff --cached --quiet; then
@@ -104,10 +109,8 @@ jobs:
             gh pr create --head bot/weekly --base "$DEFAULT_BRANCH" --title 'Weekly resource maintenance' --body-file lychee/pr-body.md
           fi
           number=$(gh pr list --head bot/weekly --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
-          if [ -n "$number" ] && [ "$LINT_RESULT" = 'success' ] && [ "$LINK_RESULT" = '0' ]; then
-            proposed_sha=$(git rev-parse HEAD)
-            gh pr merge "$number" --auto --squash --match-head-commit "$proposed_sha"
-          fi
+          printf 'number=%s\n' "$number" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           if [ "$LINK_RESULT" != '0' ]; then
             python3 - <<'PY'
           import json, os, urllib.request
@@ -134,3 +137,20 @@ jobs:
           name: weekly-reports
           path: lychee/
           retention-days: 30
+      - name: Merge only after all three checks pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          LINK_RESULT: ${{ steps.links.outputs.exit_code }}
+          PR_NUMBER: ${{ steps.publish.outputs.number }}
+          PROPOSED_SHA: ${{ steps.publish.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$TEST_RESULT" != 'success' ] || [ "$LINT_RESULT" != 'success' ] || [ "$LINK_RESULT" != '0' ]; then
+            echo 'Checks failed; the pull request remains open.'
+            exit 1
+          fi
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$PROPOSED_SHA"
+          fi
