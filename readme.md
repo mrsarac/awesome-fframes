@@ -50,7 +50,7 @@
 Source availability does not grant permission to reuse code or assets. Entries marked “no license found” have no detected repository license; inspect each project and obtain permission before reuse. A repository license may not cover bundled media.
 
 - [The Why](https://fframes.studio/the-why/) - Short film with a linked Rust implementation and a walkthrough of its scenes.
-- [Node.js prototype](https://github.com/roryyu/fframes-node) - JavaScript binding experiment; no license found.
+- [Node.js port](https://github.com/roryyu/fframes-node) - JavaScript port for rendering and mixing code-driven videos; no license found.
 - [Chinese documentation](https://github.com/bbylw/fframes-cn) - Chinese-language framework material; no license found.
 - [Claude Reel](https://github.com/wtfsayo/claude-reel) - Motion reel using springs, motion blur and animated typography; MIT licensed.
 - [ff-tracking](https://github.com/mrsarac/ff-tracking) - Virtual camera and glyph-tracking animation with synthesized sound; maintainer's own project.
