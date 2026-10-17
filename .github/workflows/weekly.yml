@@ -1,0 +1,156 @@
+name: Weekly maintenance
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+concurrency:
+  group: weekly-maintenance
+  cancel-in-progress: false
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Continue the pending weekly branch or start from the default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$DEFAULT_BRANCH"
+          owner_commit=$(git rev-list --max-parents=0 "origin/$DEFAULT_BRANCH")
+          maintainer_email=$(git show -s --format=%ae "$owner_commit")
+          export GIT_AUTHOR_NAME=mrsarac GIT_COMMITTER_NAME=mrsarac
+          export GIT_AUTHOR_EMAIL="$maintainer_email" GIT_COMMITTER_EMAIL="$maintainer_email"
+          if git ls-remote --exit-code --heads origin bot/weekly >/dev/null; then
+            git fetch origin bot/weekly:refs/remotes/origin/bot/weekly
+            if git merge-base --is-ancestor origin/bot/weekly "origin/$DEFAULT_BRANCH"; then
+              git switch -c bot/weekly "origin/$DEFAULT_BRANCH"
+            else
+              git switch -c bot/weekly --track origin/bot/weekly
+            fi
+          else
+            git switch -c bot/weekly "origin/$DEFAULT_BRANCH"
+          fi
+          # Keep the default branch's current policy after a previous squash merge.
+          # A conflict stops the run; no force push or automatic resolution.
+          git merge --no-edit "origin/$DEFAULT_BRANCH"
+          mkdir -p lychee
+          git show "origin/$DEFAULT_BRANCH:readme.md" > lychee/base.md
+          {
+            printf 'GIT_AUTHOR_NAME=mrsarac\nGIT_COMMITTER_NAME=mrsarac\n'
+            printf 'GIT_AUTHOR_EMAIL=%s\n' "$maintainer_email"
+            printf 'GIT_COMMITTER_EMAIL=%s\n' "$maintainer_email"
+          } >> "$GITHUB_ENV"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Observe links before maintenance
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --no-progress readme.md
+          format: json
+          output: lychee/initial.json
+          fail: false
+      - name: Update list and preserve provenance
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 scripts/health.py --lychee-report lychee/initial.json --report lychee/health.json
+          python3 scripts/candidates.py --report lychee/candidates.json
+          python3 scripts/weekly_report.py
+      - name: Test the maintenance scripts
+        id: tests
+        continue-on-error: true
+        run: python3 -m unittest discover -s tests -v
+      - name: Lint the proposed list
+        id: lint
+        continue-on-error: true
+        run: npx --yes awesome-lint@2.3.0
+      - name: Check the proposed links
+        id: links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --no-progress readme.md
+          format: json
+          output: lychee/final.json
+          fail: false
+      - name: Open or update one pull request
+        id: publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          LINK_RESULT: ${{ steps.links.outputs.exit_code }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          printf '\nTests: %s. Awesome lint: %s. Lychee exit: %s.\n' "$TEST_RESULT" "$LINT_RESULT" "$LINK_RESULT" >> lychee/pr-body.md
+          printf '\nRun: %s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> lychee/pr-body.md
+          git add readme.md .github/link-state.json .github/weekly-sources.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'docs: refresh weekly resources'
+            git push origin HEAD:bot/weekly
+          fi
+          number=$(gh pr list --head bot/weekly --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh pr edit "$number" --body-file lychee/pr-body.md
+          elif ! git diff --quiet "origin/$DEFAULT_BRANCH" HEAD -- readme.md .github/link-state.json .github/weekly-sources.json; then
+            gh pr create --head bot/weekly --base "$DEFAULT_BRANCH" --title 'Weekly resource maintenance' --body-file lychee/pr-body.md
+          fi
+          number=$(gh pr list --head bot/weekly --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
+          printf 'number=%s\n' "$number" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ "$LINK_RESULT" != '0' ]; then
+            python3 - <<'PY'
+          import json, os, urllib.request
+          data = json.load(open('lychee/final.json'))
+          url = 'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/issues'
+          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'User-Agent': 'awesome-fframes-maintenance'}
+          marker = '<!-- weekly-broken-links -->'
+          issues = []
+          for page in range(1, 11):
+              with urllib.request.urlopen(urllib.request.Request(url + '?state=open&per_page=100&page=' + str(page), headers=headers), timeout=20) as r: batch = json.load(r)
+              issues.extend(batch)
+              if len(batch) < 100: break
+          else: raise RuntimeError('Issue pagination limit')
+          body = 'Weekly link check failed.\n\n```json\n' + json.dumps({'errors':data['error_map'], 'timeouts':data.get('timeout_map',{})}, indent=2) + '\n```\n\n' + marker
+          existing = next((i for i in issues if marker in (i.get('body') or '') and 'pull_request' not in i), None)
+          payload = {'body':body} if existing else {'title':'Broken links (weekly maintenance)', 'body':body}
+          request = urllib.request.Request(url + ('/' + str(existing['number']) if existing else ''), data=json.dumps(payload).encode(), headers=dict(headers, **{'Content-Type':'application/json'}), method='PATCH' if existing else 'POST')
+          with urllib.request.urlopen(request, timeout=20) as r: json.load(r)
+          PY
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: weekly-reports
+          path: lychee/
+          retention-days: 30
+      - name: Merge only after all three checks pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          LINK_RESULT: ${{ steps.links.outputs.exit_code }}
+          PR_NUMBER: ${{ steps.publish.outputs.number }}
+          PROPOSED_SHA: ${{ steps.publish.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$TEST_RESULT" != 'success' ] || [ "$LINT_RESULT" != 'success' ] || [ "$LINK_RESULT" != '0' ]; then
+            echo 'Checks failed; the pull request remains open.'
+            exit 1
+          fi
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$PROPOSED_SHA"
+          fi
