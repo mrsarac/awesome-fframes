@@ -24,7 +24,7 @@ def build(root):
         raise ValueError('A changed entry lacks provenance; review manually')
     ledger = {url: ledger[url] for url in sorted(changed)}
     ledger_path.write_text(json.dumps(ledger, indent=2) + '\n')
-    lines = ['Weekly maintenance', '', 'No model calls. Review the changes and checks before merging.', '']
+    lines = ['Weekly maintenance', '', 'No model calls. Auto-merge is requested only after awesome-lint and lychee pass on the checked commit.', '']
     for url, record in ledger.items():
         lines.extend(['- ' + record['change'].capitalize() + ': ' + url,
                       '  - Stars: ' + str(record.get('stargazers_count')),

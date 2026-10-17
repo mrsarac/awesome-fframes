@@ -98,6 +98,11 @@ jobs:
           elif ! git diff --quiet "origin/$DEFAULT_BRANCH" HEAD -- readme.md .github/link-state.json .github/weekly-sources.json; then
             gh pr create --head bot/weekly --base "$DEFAULT_BRANCH" --title 'Weekly resource maintenance' --body-file lychee/pr-body.md
           fi
+          number=$(gh pr list --head bot/weekly --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$number" ] && [ "$LINT_RESULT" = 'success' ] && [ "$LINK_RESULT" = '0' ]; then
+            proposed_sha=$(git rev-parse HEAD)
+            gh pr merge "$number" --auto --squash --match-head-commit "$proposed_sha"
+          fi
           if [ "$LINK_RESULT" != '0' ]; then
             python3 - <<'PY'
           import json, os, urllib.request
