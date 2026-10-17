@@ -196,8 +196,19 @@ def run(client, readme, repository, now, dry_run, report=None):
         if name.startswith('crate:'):
             rejected.append({'name': name, 'reasons': ['No GitHub repository for license and health checks']})
             continue
-        info = client.get('https://api.github.com/repos/' + name)
-        commits = client.get('https://api.github.com/repos/' + name + '/commits?per_page=1')
+        try:
+            info = client.get('https://api.github.com/repos/' + name)
+        except APIError as exc:
+            if exc.status != 404:
+                raise
+            rejected.append({'name': name, 'reasons': ['Repository unavailable']})
+            continue
+        try:
+            commits = client.get('https://api.github.com/repos/' + name + '/commits?per_page=1')
+        except APIError as exc:
+            if exc.status not in (404, 409):
+                raise
+            commits = []
         if not isinstance(commits, list):
             raise APIError('Unexpected commit response')
         if not commits or is_stale(commits[0]['commit']['committer']['date'], now):
@@ -280,7 +291,7 @@ def main():
             args.report.write_text(json.dumps(report, indent=2) + '\n')
         return 0
     except (APIError, OSError, ValueError, KeyError, TypeError) as exc:
-        print('Candidate collection failed: ' + type(exc).__name__ + '. No partial list was published.', file=sys.stderr)
+        print('Candidate collection failed: ' + (str(exc) if isinstance(exc, APIError) else type(exc).__name__) + '. No partial list was published.', file=sys.stderr)
         return 1
 
 

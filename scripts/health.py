@@ -79,7 +79,12 @@ def run(client, readme, state_file, lychee_report, now, dry_run):
         name = repo_name(url)
         if name and name not in metadata:
             print('Checking archive status: ' + name, file=sys.stderr, flush=True)
-            metadata[name] = client.get('https://api.github.com/repos/' + name)
+            try:
+                metadata[name] = client.get('https://api.github.com/repos/' + name)
+            except APIError as exc:
+                if exc.status != 404:
+                    raise
+                metadata[name] = {}  # Only observed link failures can remove a missing repo.
         info = metadata.get(name, {})
         reasons = []
         if info.get('archived'):

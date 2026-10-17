@@ -42,6 +42,7 @@
 - [TikTok](https://github.com/dmtrKovalenko/fframes/tree/main/examples/tiktok) - Short-form video example.
 - [Podcast](https://github.com/dmtrKovalenko/fframes/tree/main/examples/podcast) - Audio-led video layout example.
 - [Motion graphics](https://github.com/dmtrKovalenko/fframes/tree/main/examples/motion-graphics) - Programmatic animation example.
+- [Audio announcement](https://github.com/dmtrKovalenko/fframes/tree/main/examples/audio-announce) - Audio-led announcement video example.
 - [Marketing](https://github.com/dmtrKovalenko/fframes/tree/main/examples/marketing) - Promotional video example.
 
 ## Showcase (source available)
@@ -49,8 +50,6 @@
 Source availability does not grant permission to reuse code or assets. Entries marked “no license found” have no detected repository license; inspect each project and obtain permission before reuse. A repository license may not cover bundled media.
 
 - [The Why](https://fframes.studio/the-why/) - Short film with a linked Rust implementation and a walkthrough of its scenes.
-- [Android demo](https://github.com/dmtrKovalenko/fframes-android-demo-project) - Mobile rendering demonstration; no license found.
-- [iOS demo](https://github.com/dmtrKovalenko/fframes_ios_demo_project) - Mobile integration demonstration; no license found.
 - [Node.js prototype](https://github.com/roryyu/fframes-node) - JavaScript binding experiment; no license found.
 - [Chinese documentation](https://github.com/bbylw/fframes-cn) - Chinese-language framework material; no license found.
 - [Claude Reel](https://github.com/wtfsayo/claude-reel) - Motion reel using springs, motion blur and animated typography; MIT licensed.

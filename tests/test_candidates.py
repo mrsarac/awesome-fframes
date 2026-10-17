@@ -117,3 +117,15 @@ class StrictCriteria(unittest.TestCase):
         self.assertEqual(m.section_for({'from_crates': True}), 'Crates')
         self.assertEqual(m.section_for({'name': 'owner/video-agent', 'topics': []}), 'Agent skills')
         self.assertEqual(m.section_for({'name': 'owner/video', 'topics': []}), 'Community')
+
+class EmptyRepository(unittest.TestCase):
+    def test_empty_search_result_is_reviewed_without_aborting(self):
+        client=Client();get=client.get
+        def empty(path):
+            if '/other/new/commits?' in path:raise m.APIError('Empty repository',409)
+            return get(path)
+        client.get=empty
+        with tempfile.TemporaryDirectory() as root:
+            path=Tests().readme(root)
+            body=m.run(client,path,'mrsarac/awesome-fframes',datetime(2026,10,17,tzinfo=timezone.utc),True)
+            self.assertIn('12 months',body)
