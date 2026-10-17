@@ -1,0 +1,2 @@
+# X blocks automated requests from CI runners (403); these links are checked by hand.
+^https://(x|twitter)\.com/
