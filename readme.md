@@ -41,7 +41,6 @@
 - [Shaders](https://github.com/dmtrKovalenko/fframes/tree/main/examples/shaders) - Examples of shader-driven visuals.
 - [TikTok](https://github.com/dmtrKovalenko/fframes/tree/main/examples/tiktok) - Short-form video example.
 - [Podcast](https://github.com/dmtrKovalenko/fframes/tree/main/examples/podcast) - Audio-led video layout example.
-- [Motion graphics](https://github.com/dmtrKovalenko/fframes/tree/main/examples/motion-graphics) - Programmatic animation example.
 - [Audio announcement](https://github.com/dmtrKovalenko/fframes/tree/main/examples/audio-announce) - Audio-led announcement video example.
 - [Marketing](https://github.com/dmtrKovalenko/fframes/tree/main/examples/marketing) - Promotional video example.
 

@@ -1,1 +1,14 @@
-{}
+{
+  "https://github.com/dmtrKovalenko/fframes/tree/main/examples/motion-graphics": {
+    "url": "https://github.com/dmtrKovalenko/fframes/tree/main/examples/motion-graphics",
+    "reasons": [
+      "Link broken in consecutive weeks 2026-W44 and 2026-W45"
+    ],
+    "source": "https://api.github.com/repos/dmtrkovalenko/fframes",
+    "stargazers_count": 3126,
+    "pushed_at": "2026-11-02T03:00:29Z",
+    "license": "MIT",
+    "crate_downloads": null,
+    "change": "remove"
+  }
+}
