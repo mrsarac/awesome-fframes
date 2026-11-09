@@ -1,14 +1,14 @@
 {
-  "https://github.com/dmtrKovalenko/fframes/tree/main/examples/motion-graphics": {
-    "url": "https://github.com/dmtrKovalenko/fframes/tree/main/examples/motion-graphics",
-    "reasons": [
-      "Link broken in consecutive weeks 2026-W44 and 2026-W45"
-    ],
-    "source": "https://api.github.com/repos/dmtrkovalenko/fframes",
-    "stargazers_count": 3126,
-    "pushed_at": "2026-11-02T03:00:29Z",
-    "license": "MIT",
-    "crate_downloads": null,
-    "change": "remove"
+  "https://github.com/mrsladoje/promo-vid-but-sweet": {
+    "name": "mrsladoje/promo-vid-but-sweet",
+    "url": "https://github.com/mrsladoje/promo-vid-but-sweet",
+    "line": "- [promo-vid-but-sweet](https://github.com/mrsladoje/promo-vid-but-sweet) - A Claude Code skill for making a short film that doesn't look generated: reference \u2192 breakdown \u2192.",
+    "section": "Community",
+    "stargazers_count": 14,
+    "license_file": "https://github.com/mrsladoje/promo-vid-but-sweet/blob/main/LICENSE",
+    "pushed_at": "2026-10-24T16:53:27Z",
+    "crate_downloads": 0,
+    "crates": [],
+    "change": "add"
   }
 }

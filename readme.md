@@ -71,6 +71,7 @@ Source availability does not grant permission to reuse code or assets. Entries m
 
 - [Discord](https://discord.gg/5UaUVewRe) - Community linked from the official website.
 - [X account](https://x.com/fframes_rust) - Project announcements and community demonstrations.
+- [promo-vid-but-sweet](https://github.com/mrsladoje/promo-vid-but-sweet) - A Claude Code skill for making a short film that doesn't look generated: reference → breakdown →.
 
 ## Contributing
 
